@@ -43,19 +43,17 @@ genParticleCollection = cms.InputTag("prunedGenParticles")
 
 # Load b-tagging modules
 process.load("RecoBTag.Configuration.RecoBTag_cff")
-process.pfImpactParameterTagInfos.jets = jetCollection
-process.softPFMuonsTagInfos.jets = jetCollection
-process.softPFElectronsTagInfos.jets = jetCollection
 
 # use pfBtagging sequence
 process.btagSeq = cms.Sequence(process.pfBTagging)
 
-# remove some modules ( because softPFMuonsTagInfos does not work) 
-process.btagSeq.remove(process.softPFMuonBJetTags)
-process.btagSeq.remove(process.pfCombinedMVABJetTags)
-process.btagSeq.remove(process.pfCombinedSecondaryVertexSoftLeptonBJetTags)
+# remove IVF modules which do not have to be re-run
+process.btagSeq.remove(process.inclusiveCandidateVertexFinder)
+process.btagSeq.remove(process.candidateVertexMerger)
+process.btagSeq.remove(process.candidateVertexArbitrator)
+process.btagSeq.remove(process.inclusiveCandidateSecondaryVertices)
 
-## For MC-based pileup jet ID
+# For MC-based pileup jet ID
 process.ak4GenJetsForPUid = cms.EDFilter("GenJetSelector",
     src = genJetCollection, 
     cut = cms.string('pt > 8.'),
@@ -81,12 +79,12 @@ process.flavourSeq = cms.Sequence(
 process.load("Validation.RecoB.bTagAnalysis_cfi")
 # Some common plot parameters 
 flavPlots = "allbcl" 
-ptRanges = cms.vdouble(30.0,80.0,120.0,200.0)
+ptRanges = cms.vdouble(50.0,80.0,120.0)
 etaRanges = cms.vdouble(0.0,1.4,2.4)
 
 # Specify taggers for which produce the validation plots
 from DQMOffline.RecoB.bTagCommon_cff import *
-#tagger configuration (from bTagCommon)
+# tagger configuration (from bTagCommon)
 tagConfig = cms.VPSet(
     cms.PSet(
         bTagTrackIPAnalysisBlock,
@@ -147,11 +145,11 @@ tagConfig = cms.VPSet(
         label = cms.InputTag("pfCombinedInclusiveSecondaryVertexV2BJetTags"),
         folder = cms.string("CSVv2")
     ),
-    #cms.PSet(
-        #bTagSoftLeptonAnalysisBlock,
-        #label = cms.InputTag("softPFMuonBJetTags"),
-        #folder = cms.string("SMT")
-    #),
+    cms.PSet(
+        bTagSoftLeptonAnalysisBlock,
+        label = cms.InputTag("softPFMuonBJetTags"),
+        folder = cms.string("SMT")
+    ),
     cms.PSet(
         bTagSoftLeptonAnalysisBlock,
         label = cms.InputTag("softPFElectronBJetTags"),
@@ -185,16 +183,16 @@ process.dqmSaver.saveAtJobEnd =cms.untracked.bool(True)
 process.dqmSaver.forceRunNumber = cms.untracked.int32(1)
 
 # Adapt module configurations to MiniAOD input
+process.pfImpactParameterTagInfos.jets = jetCollection
 process.pfImpactParameterTagInfos.primaryVertex = primaryVertexCollection
 process.pfImpactParameterTagInfos.candidates = candidateCollection
 process.pfInclusiveSecondaryVertexFinderTagInfos.extSVCollection = secondaryVertexCollection
-process.inclusiveCandidateVertexFinder.primaryVertices = primaryVertexCollection
-process.inclusiveCandidateVertexFinder.tracks = candidateCollection
-process.candidateVertexArbitrator.primaryVertices = primaryVertexCollection
-process.candidateVertexArbitrator.tracks = candidateCollection
 process.myPartons.src = genParticleCollection
-process.softPFMuonsTagInfos.primaryVertex = primaryVertexCollection
+process.softPFMuonsTagInfos.jets = jetCollection
+process.softPFMuonsTagInfos.vertex = primaryVertexCollection # temporary solution
+#process.softPFMuonsTagInfos.primaryVertex = primaryVertexCollection # this will work in the final 740 release
 process.softPFMuonsTagInfos.muons = muonCollection
+process.softPFElectronsTagInfos.jets = jetCollection
 process.softPFElectronsTagInfos.primaryVertex = primaryVertexCollection
 process.softPFElectronsTagInfos.electrons = electronCollection
 
